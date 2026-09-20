@@ -1,11 +1,21 @@
 # dsh bundle patch：把本插件插进 profile 的 loader 栈。
 # 客户端插件没有自动发现机制，这条 insert 是插件出现在 boot manifest 里的必要条件。
+#
+# 这里只负责注册条目，不带 config：profile 里按 id 打的补丁会把 config 整体替换掉，
+# 写在这里的值不会和本地配置合并，只会被覆盖，容易误解。
 - insert:
     - id: feishu-assistant
       name: 'dsh-feishu-assistant'
-      config:
-        # 飞书自建应用的凭据（开发者后台 → 凭据与基础信息）。
-        appId: 'cli_xxxxxxxxxxxxxxxx'
-        appSecret: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-        # 飞书消息要注入哪条 DSH 会话；必须是该进程里已存在的会话。
-        sessionId: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+
+# 配置写在你自己的 profile 补丁层（$DSH_HOME/profiles/<profile>/cordis.patch.yml）。
+# 注意是「按 id 打补丁」，不是再 insert 一次 —— 重复的 loader entry id 会直接报错：
+#
+# - id: feishu-assistant
+#   config:
+#     # 飞书自建应用凭据（开发者后台 → 凭据与基础信息）。
+#     appId: 'cli_xxxxxxxxxxxxxxxx'
+#     appSecret: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+#     # 飞书消息要注入哪条 DSH 会话，必须是该进程里已存在的会话。
+#     sessionId: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+#
+# 只写要覆盖的字段即可：schema 里带 default 的项会被补全。

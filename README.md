@@ -54,6 +54,7 @@ dsh plugin --profile web add dsh-feishu-assistant
   name: dsh-feishu-assistant
   config:
     sessionId: ''
+    managerId: ''
 ```
 
 ## 已知边界

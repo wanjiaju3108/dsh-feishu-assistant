@@ -6,8 +6,12 @@
   "description": "把飞书机器人接到 DSH 会话：长连接收消息与卡片回调，注入会话并把回答回写飞书。",
   "main": "lib/index.js",
   "exports": {
-    ".": { "default": "./lib/index.js" },
-    "./client": { "default": "./lib/client.js" },
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -24,7 +28,8 @@
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.2",
-    "@larksuiteoapi/node-sdk": "^1.74.0"
+    "@larksuiteoapi/node-sdk": "^1.74.0",
+    "lru-cache": "^11.5.3"
   },
   "engines": {
     "node": ">=22"

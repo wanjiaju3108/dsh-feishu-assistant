@@ -1,9 +1,8 @@
 {
   "name": "dsh-feishu-assistant",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "把飞书机器人接到 DSH 会话：长连接收消息与卡片回调，注入会话并把回答回写飞书。",
+  "description": "把飞书机器人接到 DSH 会话：长连接收私聊消息与卡片回调，注入指定会话、把回答回写飞书，不需要公网入口。四个特点：配对码把发送者绑成管理员，机器人只服务指定账号；非管理员请求走审批卡片，同意/拒绝都校验点击人身份；请求串行排队，前一条整轮 turn 跑完才注入下一条；目标会话启动时主动 resume，不用先有人在界面上点开。",
   "main": "lib/index.js",
   "exports": {
     ".": {
@@ -31,6 +30,9 @@
     "@larksuiteoapi/node-sdk": "^1.74.0",
     "lru-cache": "^11.5.3"
   },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": ">=0.1.5-rc.1 <0.2.0"
+  },
   "engines": {
     "node": ">=22"
   },
@@ -41,5 +43,5 @@
     "feishu",
     "lark"
   ],
-  "license": "UNLICENSED"
+  "license": "MIT"
 }

@@ -40,7 +40,8 @@ dsh plugin --profile web add dsh-feishu-assistant
 - **请求队列串行**：先进先出，前一条整轮 `turn/end` 结束才注入下一条
 - **回答增量回写**：每产出一条 `assistant/message` 回一条，不做整轮聚合；超过 3000 字按换行分多条发
 - **回写重试**：单条失败重试 3 次（500ms / 1000ms 退避）
-- **会话主动打开**：启动、换目标会话、收到消息时都会 `sessionController.resolveAgent()` 把会话拉起来，失败原因显示在设置页
+- **会话主动打开**：启动、换目标会话、收到消息时都会 `sessionController.resolveAgent()` 把会话拉起来
+- **会话失效有反馈**：目标会话打不开（例如被删掉）时，设置页「状态」区会出现红色的「会话错误」并写明原因；同一条失败还会主动私聊告知管理员一次，恢复后再坏会重新告知
 - **审批人校验**：卡片回调校验点击人的 open_id / user_id / union_id，非管理员点不了
 
 ## 配置项
@@ -66,5 +67,8 @@ dsh plugin --profile web add dsh-feishu-assistant
 
 ## 依赖的 DSH 服务
 
-`agents`、`settings`、`credentials`、`webServer`、`sessionController`（前四个之外必须列进 `inject`，
-否则启动时拿不到会话控制器，主动打开会话会失败）。
+`agents`、`settings`、`credentials`、`webServer` 列在 `inject` 里，缺一个插件就不会加载。
+
+`sessionController`（`@deepseek-ai/dsh-api-session-controller`，只有 web profile 挂了它）**不在**
+`inject` 里：它由 `ctx.inject()` 等就绪后再用来拉起目标会话。所以插件在没有它的 profile 里也能装上，
+只是「主动打开会话」降级为「打不开就回失败提示」。

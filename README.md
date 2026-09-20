@@ -108,6 +108,25 @@ dsh plugin --profile web add dsh-feishu-assistant
     persona: ''
 ```
 
+## 怎么验证
+
+```bash
+npm test          # 等价于 node test/all.mjs
+```
+
+六个用例、79 条断言，全部用**假飞书 SDK 跑真实的 `apply()`**（不打真接口、不需要凭据）：
+
+| 用例 | 覆盖 |
+|---|---|
+| `outbound-check` | 出站返回值语义：卡片成功 / 被拒退回文本 / 没有收件人不发 |
+| `answer-card-check` | 回答卡片：整块替换、翻页、失败补发、收尾不多调接口 |
+| `plugin-routing-check` | 轮次归属：飞书请求回原消息、外部轮次走私聊、反问提示 |
+| `idle-hold-check` | 注入前等会话空闲：忙时不注入、被插队继续等、前提被破坏时告警 |
+| `broken-session-check` | 会话打不开：第一次闪一下、之后不再白开卡片、修好后恢复 |
+| `inbound-dedupe-check` | 重复投递只答一次 |
+
+测试放在 `test/`，**不随 npm 包发布**（`package.json` 的 `files` 只有 `lib` 和 `cordis.patch.yml`）。
+
 ## 已知边界
 
 - 只处理**私聊**文本消息：群聊、图片、文件、富文本、语音一律忽略

@@ -14,12 +14,13 @@ dsh plugin --profile web add dsh-feishu-assistant
 
 ## 首次配置
 
-打开 设置 → 「飞书AI助理」，依次填三样：
+打开 设置 → 「飞书AI助理」，依次填四样：
 
 | 项 | 存哪 | 说明 |
 |---|---|---|
 | App ID / App Secret | `$DSH_HOME/.credentials.yaml` | 飞书自建应用凭据。写入后不回显；被环境变量或 `.env` 遮蔽时页面显示为只读 |
 | 目标会话 | `$DSH_HOME/settings.yaml` | 从下拉里选本机已有会话。会话必须能被本进程打开（插件会自己 resume） |
+| 人设文件 | `$DSH_HOME/settings.yaml`（只存路径） | 「飞书AI助理模式」的人设，**文件由你自己写，插件只读不写** |
 | 管理员 | `$DSH_HOME/settings.yaml` | 不手填。点「生成配对码」，把 8 位口令私聊发给机器人，发送者即被设为管理员 |
 
 飞书侧需要：应用开启机器人能力，权限 `im:message.p2p_msg:readonly` + `im:message:send_as_bot`，
@@ -27,11 +28,27 @@ dsh plugin --profile web add dsh-feishu-assistant
 
 配对码 8 位、10 分钟有效、用一次即废，只存在内存里。
 
+## 人设文件
+
+「飞书AI助理模式」这个能力跟插件一起装，但人设内容不由插件提供：自己写一个 Markdown 文件，
+在设置页里填路径即可。
+
+- **插件只读这个文件**，不会创建、不会覆盖、不会往里追加任何内容
+- 路径支持 `~` 开头；相对路径按 `$DSH_HOME` 解析，`feishu-persona.md` 等于 `~/.dsh/feishu-persona.md`
+- 有效条件是：是普通文件、非空、不超过 64 KB
+- **只有文件有效时这个模式才开着**：没配或读不出来时，飞书消息不会被处理（管理员收到一句写明原因的指路，其他人静默丢弃，审批卡片也不发）
+- 生效方式是运行时注入：插件把文件内容作为目标会话的个人设定挂上去，**盖掉该会话原本的个人设定**
+- 改完文件不用重启、也不用新建会话：下一条飞书消息就是新的人设
+
+人设文件里想写什么就写什么。典型内容是这个助手在飞书里的身份、语气、以及
+`<<<HARNESS_RESULT>>>` 这类需要固定输出的格式约定。
+
 ## 行为
 
 ```
 飞书私聊文本
   ├─ 配对码            → 把发送者设为管理员，回执
+  ├─ 人设文件无效      → 管理员收到指路；其他人静默丢弃
   ├─ 管理员            → 直接进请求队列
   └─ 其他人            → 发审批卡片给管理员；同意后进请求队列，拒绝则回执
                           （待审批最多 20 条、30 分钟过期，作废时回消息告知）
@@ -42,6 +59,7 @@ dsh plugin --profile web add dsh-feishu-assistant
 - **回写重试**：单条失败重试 3 次（500ms / 1000ms 退避）
 - **会话主动打开**：启动、换目标会话、收到消息时都会 `sessionController.resolveAgent()` 把会话拉起来
 - **会话失效有反馈**：目标会话打不开（例如被删掉）时，设置页「状态」区会出现红色的「会话错误」并写明原因；同一条失败还会主动私聊告知管理员一次，恢复后再坏会重新告知
+- **人设有状态**：设置页「状态」区显示「飞书AI助理模式 已启用 · N 字」或红色「未启用」，并写出文件为什么读不出来
 - **审批人校验**：卡片回调校验点击人的 open_id / user_id / union_id，非管理员点不了
 
 ## 配置项
@@ -56,6 +74,7 @@ dsh plugin --profile web add dsh-feishu-assistant
   config:
     sessionId: ''
     managerId: ''
+    personaFile: ''
 ```
 
 ## 已知边界
@@ -72,3 +91,6 @@ dsh plugin --profile web add dsh-feishu-assistant
 `sessionController`（`@deepseek-ai/dsh-api-session-controller`，只有 web profile 挂了它）**不在**
 `inject` 里：它由 `ctx.inject()` 等就绪后再用来拉起目标会话。所以插件在没有它的 profile 里也能装上，
 只是「主动打开会话」降级为「打不开就回失败提示」。
+
+人设注入走目标会话自己的 `agent.ctx.systemPrompt.section()`，不额外依赖插件包：拿不到这个服务时
+只是在日志里说明「人设没法注入」，注入流程照旧。

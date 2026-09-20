@@ -1,0 +1,11 @@
+# dsh bundle patch：把本插件插进 profile 的 loader 栈。
+# 客户端插件没有自动发现机制，这条 insert 是插件出现在 boot manifest 里的必要条件。
+- insert:
+    - id: feishu-assistant
+      name: 'dsh-feishu-assistant'
+      config:
+        # 飞书自建应用的凭据（开发者后台 → 凭据与基础信息）。
+        appId: 'cli_xxxxxxxxxxxxxxxx'
+        appSecret: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+        # 飞书消息要注入哪条 DSH 会话；必须是该进程里已存在的会话。
+        sessionId: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'

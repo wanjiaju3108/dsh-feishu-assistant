@@ -1,0 +1,35 @@
+{
+  "name": "dsh-feishu-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "把飞书机器人接到 DSH 会话：长连接收消息与卡片回调，注入会话并把回答回写飞书。",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "default": "./lib/index.js" },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.74.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "feishu",
+    "lark"
+  ],
+  "license": "UNLICENSED"
+}

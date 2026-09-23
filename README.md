@@ -10,6 +10,15 @@ dsh plugin --profile web add dsh-feishu-assistant
 
 装完重启 `dsh web`。
 
+> **装的时候如果收尾报 `ERR_PNPM_IGNORED_BUILDS: protobufjs`，插件其实没装上。**
+> `@larksuiteoapi/node-sdk` 的依赖里有 `protobufjs`，它带 postinstall 脚本，pnpm 默认不跑；dsh 把 pnpm 的非零退出当成整体失败，于是没把插件登记进 profile。先放行再装一次：
+>
+> ```yaml
+> # ~/.dsh/profiles/<profile>/pnpm-workspace.yaml
+> allowBuilds:
+>   protobufjs: true
+> ```
+
 ## 做一个飞书AI助理（从零到能聊天）
 
 ### 第 1 步：飞书开放平台建应用

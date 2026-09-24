@@ -16,8 +16,6 @@ dsh plugin --profile web add dsh-feishu-assistant
 > ```sh
 > dsh plugin --profile web add dsh-feishu-assistant@0.1.4
 > ```
->
-> **别装 `0.1.5`**：它 `peerDependencies` 里写的是 `>=0.1.5-rc.1 <0.2.0`，但代码已经换成 0.1.7 那套（`volatile` 字段 + `loader/volatile-update`），装在 0.1.5 上能过校验却跑不起来。
 
 > **装的时候如果收尾报 `ERR_PNPM_IGNORED_BUILDS: protobufjs`，插件其实没装上。**
 > `@larksuiteoapi/node-sdk` 的依赖里有 `protobufjs`，它带 postinstall 脚本，pnpm 默认不跑；dsh 把 pnpm 的非零退出当成整体失败，于是没把插件登记进 profile。先放行再装一次：

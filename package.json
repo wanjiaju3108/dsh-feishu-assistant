@@ -1,6 +1,6 @@
 {
   "name": "dsh-feishu-assistant",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "scripts": {
     "check": "node --check lib/index.js && for f in $(find lib -name '*.js'); do node --check \"$f\" || exit 1; done",
     "test": "node test/all.mjs",
@@ -45,7 +45,12 @@
     "lru-cache": "^11.5.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.1.5-rc.1 <0.2.0"
+    "@deepseek-ai/dsh": ">=0.1.7-rc.1"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22"

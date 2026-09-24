@@ -94,10 +94,19 @@ export function createAgent({ id = 'sess-1', status = 'idle', manualIdle = false
  */
 export async function startPlugin({ agent = createAgent(), hasAgent = () => true, log = createLogger(), config } = {}) {
   const handlers = new Map();
+
+  /** 条目 config：`apply` 收到的那一份，也是假设置服务写回的地方。 */
+  const entryConfig = { sessionId: agent.id, managerId: 'ou_boss', persona: '你是助理', ...config };
+
   const services = {
     agents: { get: (id) => (hasAgent() && id === agent.id ? agent : undefined) },
     credentials: { resolve: async (ref) => ({ value: ref === 'FEISHU_APP_ID' ? 'cli_stub' : 'secret_stub' }) },
-    settings: { register: () => ({ get: () => ({}), replace: async () => {} }) },
+    settings: {
+      configure: () => {},
+      // 按 update 的语义把补丁并进条目 config：真 Loader 写入后也是把新值原地更新到 config 上，
+      // 插件靠 config 重读，用例靠派发 loader/volatile-update 走那条热更新路径。
+      update: async (namespace, patch) => Object.assign(entryConfig, patch),
+    },
   };
   const ctx = {
     logger: () => log.logger,
@@ -113,7 +122,7 @@ export async function startPlugin({ agent = createAgent(), hasAgent = () => true
   };
 
   const plugin = await import('../lib/index.js');
-  await plugin.apply(ctx, { sessionId: agent.id, managerId: 'ou_boss', persona: '你是助理', ...config });
+  await plugin.apply(ctx, entryConfig);
 
   /** 派发一条会话事件。 */
   const emit = (type, data) => {

@@ -40,7 +40,7 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.2",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@larksuiteoapi/node-sdk": "^1.74.0",
     "lru-cache": "^11.5.3"
   },

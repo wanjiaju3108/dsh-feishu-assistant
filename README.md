@@ -171,3 +171,8 @@ npm test          # 等价于 node test/all.mjs
 四个都是官方包（`@deepseek-ai/dsh-agent` / `dsh-settings` / `dsh-credentials` / `dsh-host-webserver`）。前三个随 `dsh-base` 走，任何 profile 都有；**`webServer` 只有 `dsh-web-app` 提供**，所以：
 
 > **这个插件只能在 web profile 里用。** 装进 `acp`、`headless`、`sdk` 之类的 profile 时，因为 `webServer` 不存在，插件会**静默不加载**——不报错，就是没反应。安装时 `--profile web` 不要省。
+
+## 更新日志
+
+见 [CHANGELOG.md](./CHANGELOG.md)。
+

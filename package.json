@@ -1,6 +1,6 @@
 {
   "name": "dsh-feishu-assistant",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "scripts": {
     "check": "node --check lib/index.js && for f in $(find lib -name '*.js'); do node --check \"$f\" || exit 1; done",
     "test": "node test/all.mjs",

@@ -100,7 +100,7 @@ export async function startPlugin({ agent = createAgent(), hasAgent = () => true
 
   const services = {
     agents: { get: (id) => (hasAgent() && id === agent.id ? agent : undefined) },
-    credentials: { resolve: async (ref) => ({ value: ref === 'FEISHU_APP_ID' ? 'cli_stub' : 'secret_stub' }) },
+    credentials: { resolve: async (ref) => ({ value: ref === 'FEISHU_ASSISTANT_APP_ID' ? 'cli_stub' : 'secret_stub' }) },
     settings: {
       configure: () => {},
       // 按 update 的语义把补丁并进条目 config：真 Loader 写入后也是把新值原地更新到 config 上，

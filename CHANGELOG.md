@@ -2,6 +2,16 @@
 
 这个插件每一版改了什么。版本号按 `package.json` 里的版本走。
 
+## 未发布
+
+### 凭据引用名改成 FEISHU_ASSISTANT_*
+
+- 和 `dsh-feishu-cui` 的 `FEISHU_CUI_*` 对齐：`FEISHU_APP_ID` → `FEISHU_ASSISTANT_APP_ID`，`FEISHU_APP_SECRET` → `FEISHU_ASSISTANT_APP_SECRET`。插件读的是新名字，App ID / App Secret 的值不变。
+
+### 升级注意
+
+- 把 `.credentials.yaml` 里那两个键改名（值不动）：`FEISHU_APP_ID` → `FEISHU_ASSISTANT_APP_ID`、`FEISHU_APP_SECRET` → `FEISHU_ASSISTANT_APP_SECRET`。只改一边插件取不到凭据。
+
 ## 0.1.7
 
 ### 适配新版 DSH 的设置模型

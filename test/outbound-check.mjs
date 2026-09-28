@@ -71,7 +71,8 @@ const outboundFor = (client) => createOutbound({ logger, getClient: () => client
 {
   const { calls, client } = fakeFeishu();
   const outbound = outboundFor(client);
-  eq('⑨ 私聊卡片返回 true', await outbound.sendCard('ou_x', { schema: '2.0', body: {} }), true);
+  const cardMessageId = await outbound.sendCard('ou_x', { schema: '2.0', body: {} });
+  eq('⑨ 私聊卡片返回消息 ID', typeof cardMessageId === 'string' && cardMessageId.length > 0, true);
   eq('⑩ 发的是内联卡片', calls.map((c) => `${c.kind}/${c.msgType}`), ['create/interactive']);
 }
 

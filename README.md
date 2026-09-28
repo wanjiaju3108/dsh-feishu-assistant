@@ -65,7 +65,7 @@ dsh plugin --profile web add dsh-feishu-assistant
 | 人设文件 | 上传一份本地 md/txt；**不上传就等于这个模式没开** | `$DSH_HOME/settings.yaml` |
 | 管理员 | 不手填，用配对码绑 | `$DSH_HOME/settings.yaml` |
 
-凭据在 `.credentials.yaml` 里的引用名是 `FEISHU_ASSISTANT_APP_ID` / `FEISHU_ASSISTANT_APP_SECRET`（和 `dsh-feishu-cui` 用的 `FEISHU_CUI_*` 刻意分开）。
+凭据在 `.credentials.yaml` 里的引用名是 `FEISHU_ASSISTANT_APP_ID` / `FEISHU_ASSISTANT_APP_SECRET`。
 
 凭据写入后不再回显；被环境变量或 `.env` 遮蔽时，页面上显示为只读。
 

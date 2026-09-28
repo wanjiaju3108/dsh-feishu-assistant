@@ -7,3 +7,6 @@ node_modules/
 *.iws
 *.iml
 *.ipr
+
+# lockfile 不进版本库：它是本地那份 DSH 的整棵依赖树，重解析结果不稳定
+package-lock.json

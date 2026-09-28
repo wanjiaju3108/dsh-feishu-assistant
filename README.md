@@ -50,7 +50,7 @@ dsh plugin --profile web add dsh-feishu-assistant
    - `contact:contact:readonly` —— 读通讯录，用来在审批卡片上把请求人显示成姓名。不加也能跑，卡片上会退回显示 open_id
    - `im:message.urgent` —— 应用内加急：审批卡片发出去时顺手把这条消息标成「急」。不加也能跑，只是少了这一档提醒
    - `im:message.urgent:sms` —— 短信加急：审批卡片超过 5 分钟没人处理时升级一次。不加也能跑，只是升级那一步会失败并记日志
-5. 用上一条权限的话，还要把请求人放进应用的**通讯录权限范围**（开发配置 → 权限管理 → 数据权限）：`contact/v3/users` 只返回权限范围内的用户，范围外的照样取不到名字，接口会报 `41050 no user authority`
+5. 用 `contact:contact:readonly` 的话，还要把请求人放进应用的**通讯录权限范围**（开发配置 → 权限管理 → 数据权限）：`contact/v3/users` 只返回权限范围内的用户，范围外的照样取不到名字，接口会报 `41050 no user authority`
 6. 「事件与回调」里把**订阅方式设为长连接**，然后添加：
    - 事件 `im.message.receive_v1`（收到消息）
    - 回调 `card.action.trigger`（审批卡片的按钮点击）

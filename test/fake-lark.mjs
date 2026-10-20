@@ -10,7 +10,17 @@ export const Domain = { Feishu: 'https://open.feishu.cn', Lark: 'https://open.la
 export const LoggerLevel = { trace: 0, debug: 1, info: 2, warn: 3, error: 4, fatal: 5 };
 
 /** 记账与句柄：测试从这里读调用序列、派发事件。 */
-export const registry = { calls: [], dispatcher: undefined, ws: undefined, seq: { card: 0, msg: 0 }, delayMs: 0 };
+export const registry = {
+  calls: [],
+  dispatcher: undefined,
+  ws: undefined,
+  seq: { card: 0, msg: 0 },
+  delayMs: 0,
+  /** 让建卡片实体失败，模拟没有 cardkit:card:write 权限。 */
+  failCardCreate: false,
+  /** 让合并转发被拒，模拟没有 im:message:send_as_bot。 */
+  rejectMergeForward: false,
+};
 
 /** 需要模拟"接口有往返耗时"时用它：延迟期间可以发生别的事件（例如 turn/end）。 */
 async function pause() {
@@ -58,6 +68,7 @@ export class Client {
           create: async ({ data }) => {
             await pause();
             registry.calls.push({ kind: 'card.create', card: JSON.parse(data.data) });
+            if (registry.failCardCreate) return { code: 99991672, msg: 'no scope' };
             registry.seq.card += 1;
             return { code: 0, data: { card_id: `c${registry.seq.card}` } };
           },
@@ -124,6 +135,39 @@ export class Client {
           });
           registry.seq.msg += 1;
           return { code: 0, data: { message_id: `m${registry.seq.msg}` } };
+        },
+        mergeForward: async ({ params, data }) => {
+          await pause();
+          registry.calls.push({
+            kind: 'message.mergeForward',
+            receiveId: data.receive_id,
+            receiveIdType: params?.receive_id_type,
+            messageIdList: data.message_id_list,
+          });
+          if (registry.rejectMergeForward) return { code: 99991672, msg: 'no scope' };
+          registry.seq.msg += 1;
+          return { code: 0, data: { message: { message_id: `m${registry.seq.msg}` } } };
+        },
+        urgentApp: async ({ path, data }) => {
+          await pause();
+          registry.calls.push({ kind: 'message.urgentApp', messageId: path.message_id, userIds: data.user_id_list });
+          return { code: 0, data: {} };
+        },
+        urgentSms: async ({ path, data }) => {
+          await pause();
+          registry.calls.push({ kind: 'message.urgentSms', messageId: path.message_id, userIds: data.user_id_list });
+          return { code: 0, data: {} };
+        },
+      },
+    };
+    this.contact = {
+      v3: {
+        user: {
+          get: async ({ path }) => {
+            await pause();
+            registry.calls.push({ kind: 'contact.user.get', userId: path.user_id });
+            return { code: 0, data: { user: { name: '访客' } } };
+          },
         },
       },
     };

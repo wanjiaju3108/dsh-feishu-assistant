@@ -12,10 +12,16 @@
 #
 # - id: feishu-assistant
 #   config:
-#     # 飞书自建应用凭据（开发者后台 → 凭据与基础信息）。
-#     appId: 'cli_xxxxxxxxxxxxxxxx'
-#     appSecret: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 #     # 飞书消息要注入哪条 DSH 会话，必须是该进程里已存在的会话。
 #     sessionId: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+#     # 管理员 open_id；留空时在设置页生成配对码，再在飞书里私聊发给机器人。
+#     managerId: ''
+#     # 人设在设置页上传后由插件写入；这里只用于给初始值。
+#     persona: ''
+#     personaName: ''
+#
+# App ID / App Secret 不在这份 config 里：它们走凭据存储
+# （$DSH_HOME/.credentials.yaml，引用名 FEISHU_ASSISTANT_APP_ID / FEISHU_ASSISTANT_APP_SECRET），
+# 在设置页填写。
 #
 # 只写要覆盖的字段即可：schema 里带 default 的项会被补全。

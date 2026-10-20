@@ -59,14 +59,14 @@ dsh plugin --profile web add dsh-feishu-assistant
 
 ### 第 2 步：DSH 里装上并配好
 
-打开 设置 → 「飞书AI助理」，四项：
+打开 设置 → 「飞书AI助理」，四项（另有一个「企微提醒（可选）」区块，见下面「企微提醒（可选）」）：
 
 | 项 | 填什么 | 存哪 |
 |---|---|---|
 | App ID / App Secret | 第 1 步抄下来的 | `$DSH_HOME/.credentials.yaml` |
-| 目标会话 | 见下面「选一条会话」 | `$DSH_HOME/settings.yaml` |
-| 人设文件 | 上传一份本地 md/txt；**不上传就等于这个模式没开** | `$DSH_HOME/settings.yaml` |
-| 管理员 | 不手填，用配对码绑 | `$DSH_HOME/settings.yaml` |
+| 目标会话 | 见下面「选一条会话」 | 当前 Profile 的插件配置 |
+| 人设文件 | 上传一份本地 md/txt；**不上传就等于这个模式没开** | 当前 Profile 的插件配置 |
+| 管理员 | 不手填，用配对码绑 | 当前 Profile 的插件配置 |
 
 凭据在 `.credentials.yaml` 里的引用名是 `FEISHU_ASSISTANT_APP_ID` / `FEISHU_ASSISTANT_APP_SECRET`。
 
@@ -105,7 +105,7 @@ dsh plugin --profile web add dsh-feishu-assistant
 
 「飞书AI助理模式」这个能力跟插件一起装，但人设内容不由插件提供：上传一份本地 md/txt 就行。
 
-- 上传后内容是**插件自己配置里的一份副本**（`$DSH_HOME/settings.yaml` 的 `feishu-assistant.persona`），**插件不会动你的原文件**
+- 上传后内容是**插件自己配置里的一份副本**（当前 Profile 插件配置的 `feishu-assistant.persona`），**插件不会动你的原文件**
 - 上限 64 KB；空文件或超限，设置页直接拒绝
 - 内容为空时飞书消息不处理（管理员收到一句指路，其他人静默丢弃，审批卡片也不发）
 - 内容会**盖掉该会话原本的个人设定**
@@ -157,7 +157,48 @@ dsh plugin --profile web add dsh-feishu-assistant
     managerId: ''
     persona: ''
     personaName: ''
+    wecomEnabled: false
+    wecomCorpId: ''
+    wecomAgentId: 0   # 手动填应用 AgentId
+    wecomToUser: ''
 ```
+
+### 企微提醒（可选）
+
+插件只**主动发消息**，不接收企微事件，所以不提供 webhook。
+
+**设置页怎么填**
+
+| 项 | 填什么 | 存哪 |
+|---|---|---|
+| 启用 | 开关，默认关 | 插件配置 |
+| 企业 ID | 企微的 CorpID | 插件配置 |
+| AgentId | 应用的 AgentId，手填，不设默认；`0` 或缺失都算未配置 | 插件配置 |
+| 接收人 UserId | 消息发给谁 | 插件配置 |
+| Secret | 应用的 Secret，保存后不回显 | `.credentials.yaml` 的 `FEISHU_ASSISTANT_WECOM_SECRET` |
+
+开关关着，或企业 ID / AgentId / 接收人 / Secret 任一缺失，发送直接跳过，不发请求。
+
+**企微后台的前置条件**
+
+企业微信可能要求先配置「可信域名」或「接收消息服务器 URL」，才允许保存「企业可信 IP」。这是企微后台的流程，**本插件不提供 webhook**，也不会替你准备公网入口。两种走法：
+
+- 复用已有的可信域名：把企微给的校验文件放到该域名根目录；
+- 复用已有的回调服务：例如 classroom 的 `/webhook`，注意新应用的 Token / EncodingAESKey 要和该服务配置的一致。
+
+另外，自建应用的服务端 API 受「企业可信 IP」限制：运行 `dsh` 的机器出口公网 IP 要加进去。家宽/办公网 IP 会变，变了会报 `60020`，需要重新加，或改走固定出口。
+
+纯发提醒不需要接收企微消息，但这两个前置条件仍然要满足。
+
+**什么时候发**
+
+非管理员请求跑完、这一轮有产出时发：原话 + 回答。不依赖飞书侧是否发送成功——飞书发送整个失败时，企微提醒照样会发。开关关着或配置不全时不发。
+
+发送器在 `lib/wecom.js`，也挂在 `ctx` 的 `feishuWecomSender` 上，其他插件可以用 `ctx.get('feishuWecomSender')` 取。
+
+**实现**
+
+照 `el-melloi-classroom` 的 wecom：`gettoken` → 按 corpId + agentId 缓存 token（提前 60 秒过期）→ `message/send`，正文按 2048 UTF-8 字节切分。
 
 ## 怎么验证
 
@@ -165,7 +206,7 @@ dsh plugin --profile web add dsh-feishu-assistant
 npm test          # 等价于 node test/all.mjs
 ```
 
-七个用例、90 条断言，全部用**假飞书 SDK**（不打真接口、不需要凭据），涉及消息链路的都跑真实的 `apply()`：
+九个用例、125 条断言，全部用**假飞书 SDK**（不打真接口、不需要凭据），涉及消息链路的都跑真实的 `apply()`：
 
 | 用例 | 覆盖 |
 |---|---|
@@ -175,7 +216,9 @@ npm test          # 等价于 node test/all.mjs
 | `idle-hold-check` | 注入前等会话空闲：忙时不注入、被插队继续等、前提被破坏时告警 |
 | `broken-session-check` | 会话打不开：第一次闪一下、之后不再白开卡片、修好后恢复 |
 | `inbound-dedupe-check` | 重复投递只答一次 |
-| `forward-check` | 合并转发：翻页消息 ID、开卡失败走普通消息、转发被拒不影响收尾 |
+| `forward-check` | 合并转发：翻页消息 ID、开卡失败走普通消息、转发被拒不影响收尾、企微提醒触发 |
+| `wecom-check` | 企微提醒：开关/配置不全/Secret 缺失不发、token 复用与 corpId 变更、2048 字节切分、接收人覆盖、errcode 非 0 |
+| `settings-check` | 设置页后端：AgentId 解析、快照不返回 Secret、只存企微 Secret 不重连、注册 feishuWecomSender |
 
 测试放在 `test/`，**不随 npm 包发布**（`package.json` 的 `files` 只有 `lib` 和 `cordis.patch.yml`）。
 
@@ -191,6 +234,7 @@ npm test          # 等价于 node test/all.mjs
 - 目标会话忙着（界面里那一轮正在跑）时，飞书请求要等它跑完才开始；等待时间等于那一轮的时长。等待期间请求人的卡片显示「正在处理」
 - 回答卡片是**普通卡片**（非流式），没有「生成中」状态，生成期间也能在飞书里手动转发
 - 每段正文是**整块替换**、不是逐字流式：答案会在每个 step 结束时成段出现（这是有意的，见上）
+- 企微提醒在非管理员请求跑完、这一轮有产出时发，独立于飞书合并转发；内容为原话 + 回答；只主动发消息，不接收事件，没有 webhook
 - 没有发送者限流；没有 `/` 命令
 
 ## 依赖的 DSH 服务

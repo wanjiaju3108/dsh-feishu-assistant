@@ -92,20 +92,30 @@ export function createAgent({ id = 'sess-1', status = 'idle', manualIdle = false
  * @param options.config 传给 `apply()` 的配置
  * @returns 句柄：ctx / agent / log / emit / incoming
  */
-export async function startPlugin({ agent = createAgent(), hasAgent = () => true, log = createLogger(), config } = {}) {
+export async function startPlugin({ agent = createAgent(), hasAgent = () => true, log = createLogger(), config, webServer } = {}) {
   const handlers = new Map();
+  const routes = new Map();
+  const provided = new Map();
+  const credentialsSet = [];
 
   /** 条目 config：`apply` 收到的那一份，也是假设置服务写回的地方。 */
   const entryConfig = { sessionId: agent.id, managerId: 'ou_boss', persona: '你是助理', ...config };
 
   const services = {
     agents: { get: (id) => (hasAgent() && id === agent.id ? agent : undefined) },
-    credentials: { resolve: async (ref) => ({ value: ref === 'FEISHU_ASSISTANT_APP_ID' ? 'cli_stub' : 'secret_stub' }) },
+    credentials: {
+      resolve: async (ref) => ({ value: ref === 'FEISHU_ASSISTANT_APP_ID' ? 'cli_stub' : 'secret_stub' }),
+      describe: async (ref) => ({ configured: ref === 'FEISHU_ASSISTANT_WECOM_SECRET', source: 'test', writable: true }),
+      set: async (ref, value) => { credentialsSet.push({ ref, value }); },
+    },
     settings: {
       configure: () => {},
       // 按 update 的语义把补丁并进条目 config：真 Loader 写入后也是把新值原地更新到 config 上，
       // 插件靠 config 重读，用例靠派发 loader/volatile-update 走那条热更新路径。
       update: async (namespace, patch) => Object.assign(entryConfig, patch),
+    },
+    webServer: webServer ?? {
+      register: ({ path, handler }) => { routes.set(path, handler); },
     },
   };
   const ctx = {
@@ -119,6 +129,8 @@ export async function startPlugin({ agent = createAgent(), hasAgent = () => true
     },
     inject: () => {},
     effect: (fn) => { fn(); },
+    // 插件会把企微发送器挂到 ctx 上；这里记下来，供设置页用例断言。
+    provide: (name, value) => { provided.set(name, value); return () => {}; },
   };
 
   const plugin = await import('../lib/index.js');
@@ -139,7 +151,7 @@ export async function startPlugin({ agent = createAgent(), hasAgent = () => true
     sender: { sender_id: { open_id: 'ou_boss' } },
   });
 
-  return { ctx, agent, log, emit, incoming, plugin };
+  return { ctx, agent, log, emit, incoming, plugin, routes, provided, credentialsSet };
 }
 
 /** 一条 assistant 消息事件的数据（正文按 step 提交）。 */

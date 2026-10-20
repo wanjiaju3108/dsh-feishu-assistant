@@ -20,6 +20,8 @@ export const registry = {
   failCardCreate: false,
   /** 让合并转发被拒，模拟没有 im:message:send_as_bot。 */
   rejectMergeForward: false,
+  /** 让普通消息回复失败，模拟飞书侧完全发不出去。 */
+  failReply: false,
 };
 
 /** 需要模拟"接口有往返耗时"时用它：延迟期间可以发生别的事件（例如 turn/end）。 */
@@ -121,6 +123,7 @@ export class Client {
             msgType: data.msg_type,
             content: JSON.parse(data.content),
           });
+          if (registry.failReply) return { code: 99991672, msg: 'no scope' };
           registry.seq.msg += 1;
           return { code: 0, data: { message_id: `m${registry.seq.msg}` } };
         },

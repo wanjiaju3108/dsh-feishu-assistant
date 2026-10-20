@@ -4,6 +4,15 @@
 
 ## 未发布
 
+### 企微提醒（可选）
+
+- 新增 `lib/wecom.js`：照 classroom 的逻辑实现企微文本发送（`gettoken` → 按 corpId + agentId + secret 缓存 token → `message/send`，正文按 2048 UTF-8 字节切分）。
+- 开关 `wecomEnabled` 关闭或配置不全时不推送；Secret 从 `$DSH_HOME/.credentials.yaml` 的 `FEISHU_ASSISTANT_WECOM_SECRET` 读。
+- 设置页「企微提醒（可选）」可以填开关、企业 ID、AgentId、接收人和 Secret。
+- 非管理员请求跑完、这一轮有产出时发企微提醒（原话 + 回答），不依赖飞书合并转发是否成功。
+- 发送器也挂在 `ctx` 的 `feishuWecomSender` 上。
+- 插件只主动发消息，不提供 webhook；企微后台要求「可信域名」或「接收消息服务器 URL」的前置条件需自行满足。
+
 ### 非管理员的整轮对话会合并转发给管理员
 
 - 非管理员请求跑完后，把请求人的原话和回答消息用 `im/v1/messages/merge_forward` 合并转发给管理员；回答卡片开不出来、退回普通消息时也能转发。

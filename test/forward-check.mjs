@@ -70,16 +70,35 @@ async function guestTurn(agent, emit, messageId, text) {
 {
   resetCalls();
   registry.failCardCreate = true;
-  const { agent, log, emit } = await startPlugin({ agent: createAgent() });
-  const injected = await guestTurn(agent, emit, 'om_guest', '帮我查一下');
-  ok('④ 开卡失败后回答仍被注入会话', Boolean(injected?.id));
-  const forward = registry.calls.find((c) => c.kind === 'message.mergeForward');
-  ok('⑤ 开卡失败、回答退回普通消息时也发起了合并转发', Boolean(forward));
-  eq('⑥ 转发目标是管理员 open_id', [forward?.receiveId, forward?.receiveIdType], ['ou_boss', 'open_id']);
-  eq('⑦ 列表第一项是请求人的原话', forward?.messageIdList?.[0], 'om_guest');
-  ok('⑧ 列表里还有普通消息路径发出的回答', (forward?.messageIdList?.length ?? 0) >= 2);
-  ok('⑨ 没有被 answerText 为空的判断挡掉', log.lines.info.some((l) => l.includes('已合并转发')));
-  registry.failCardCreate = false;
+  const fetchBodies = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const path = new URL(url).pathname;
+    if (path === '/cgi-bin/gettoken') {
+      return { ok: true, status: 200, text: async () => JSON.stringify({ errcode: 0, access_token: 't', expires_in: 7200 }) };
+    }
+    fetchBodies.push(JSON.parse(init.body));
+    return { ok: true, status: 200, text: async () => JSON.stringify({ errcode: 0 }) };
+  };
+  try {
+    const { agent, log, emit } = await startPlugin({
+      agent: createAgent(),
+      config: { wecomEnabled: true, wecomCorpId: 'ww', wecomAgentId: 1000008, wecomToUser: 'u1' },
+    });
+    const injected = await guestTurn(agent, emit, 'om_guest', '帮我查一下');
+    ok('④ 开卡失败后回答仍被注入会话', Boolean(injected?.id));
+    const forward = registry.calls.find((c) => c.kind === 'message.mergeForward');
+    ok('⑤ 开卡失败、回答退回普通消息时也发起了合并转发', Boolean(forward));
+    eq('⑥ 转发目标是管理员 open_id', [forward?.receiveId, forward?.receiveIdType], ['ou_boss', 'open_id']);
+    eq('⑦ 列表第一项是请求人的原话', forward?.messageIdList?.[0], 'om_guest');
+    ok('⑧ 列表里还有普通消息路径发出的回答', (forward?.messageIdList?.length ?? 0) >= 2);
+    ok('⑨ 没有被产出判断挡掉', log.lines.info.some((l) => l.includes('已合并转发')));
+    ok('⑨b 开卡失败时企微提醒里带着回答',
+      fetchBodies.some((b) => b.text.content.includes('回答：查到了两处')));
+  } finally {
+    globalThis.fetch = originalFetch;
+    registry.failCardCreate = false;
+  }
 }
 
 // ---------------------------------------------------------------- 3) 合并转发被拒：收尾照常，队列放行
@@ -97,6 +116,71 @@ async function guestTurn(agent, emit, messageId, text) {
   ok('⑪ 请求收尾没有卡住，队列继续放行', agent.followups.length > before);
   registry.failCardCreate = false;
   registry.rejectMergeForward = false;
+}
+
+// 4) 企微提醒：和整轮转发同一触发点
+{
+  resetCalls();
+  const fetchCalls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const path = new URL(url).pathname;
+    fetchCalls.push(path);
+    if (path === '/cgi-bin/gettoken') {
+      return { ok: true, status: 200, text: async () => JSON.stringify({ errcode: 0, access_token: 't', expires_in: 7200 }) };
+    }
+    return { ok: true, status: 200, text: async () => JSON.stringify({ errcode: 0 }) };
+  };
+  try {
+    const { agent, emit } = await startPlugin({
+      agent: createAgent({ id: 'sess-3' }),
+      config: {
+        wecomEnabled: true,
+        wecomCorpId: 'ww',
+        wecomAgentId: 1000008,
+        wecomToUser: 'u1',
+      },
+    });
+    await guestTurn(agent, emit, 'om_guest3', '企微也提醒一下');
+    await tick(300);
+    ok('⑫ 企微提醒和整轮转发同一触发点', fetchCalls.includes('/cgi-bin/message/send'));
+    ok('⑬ 先 gettoken 再发消息',
+      fetchCalls.indexOf('/cgi-bin/gettoken') >= 0
+      && fetchCalls.indexOf('/cgi-bin/gettoken') < fetchCalls.indexOf('/cgi-bin/message/send'));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// 5) 飞书消息全部发不出去：企微提醒仍然发
+{
+  resetCalls();
+  registry.failCardCreate = true;
+  registry.failReply = true;
+  const fetchBodies = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const path = new URL(url).pathname;
+    if (path === '/cgi-bin/gettoken') {
+      return { ok: true, status: 200, text: async () => JSON.stringify({ errcode: 0, access_token: 't', expires_in: 7200 }) };
+    }
+    fetchBodies.push(JSON.parse(init.body));
+    return { ok: true, status: 200, text: async () => JSON.stringify({ errcode: 0 }) };
+  };
+  try {
+    const { agent, emit } = await startPlugin({
+      agent: createAgent({ id: 'sess-4' }),
+      config: { wecomEnabled: true, wecomCorpId: 'ww', wecomAgentId: 1000008, wecomToUser: 'u1' },
+    });
+    await guestTurn(agent, emit, 'om_guest4', '飞书坏了也要提醒');
+    await tick(300);
+    ok('⑭ 飞书消息全失败时企微提醒仍然发', fetchBodies.length > 0);
+    ok('⑮ 飞书侧没有可合并转发的消息，跳过', !registry.calls.some((c) => c.kind === 'message.mergeForward'));
+  } finally {
+    globalThis.fetch = originalFetch;
+    registry.failCardCreate = false;
+    registry.failReply = false;
+  }
 }
 
 finish();

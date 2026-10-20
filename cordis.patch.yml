@@ -19,9 +19,17 @@
 #     # 人设在设置页上传后由插件写入；这里只用于给初始值。
 #     persona: ''
 #     personaName: ''
+#     # 企微提醒（可选）：开关关着或配置不全时不推送。
+#     wecomEnabled: false
+#     wecomCorpId: ''
+#     wecomAgentId: 0   # 手动填应用 AgentId，0 表示未配置
+#     wecomToUser: ''
 #
 # App ID / App Secret 不在这份 config 里：它们走凭据存储
 # （$DSH_HOME/.credentials.yaml，引用名 FEISHU_ASSISTANT_APP_ID / FEISHU_ASSISTANT_APP_SECRET），
 # 在设置页填写。
+#
+# 企微 Secret 也放在同一份凭据文件的 refs 下：
+#   FEISHU_ASSISTANT_WECOM_SECRET: xxxxx
 #
 # 只写要覆盖的字段即可：schema 里带 default 的项会被补全。

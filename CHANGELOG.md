@@ -4,6 +4,11 @@
 
 ## 未发布
 
+### 没有 webServer 的 profile 也能用
+
+- 去掉对 `webServer` 的硬依赖：没有设置页的 profile（acp / headless / sdk）里插件照常加载，飞书长连接、队列、审批、合并转发、企微提醒都工作。
+- 没有设置页时，配置手写在当前 profile 的 `cordis.patch.yml`，Secret 写在 `.credentials.yaml` 的 `refs` 下。
+
 ### 企微提醒（可选）
 
 - 新增 `lib/wecom.js`：照 classroom 的逻辑实现企微文本发送（`gettoken` → 按 corpId + agentId + secret 缓存 token → `message/send`，正文按 2048 UTF-8 字节切分）。

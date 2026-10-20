@@ -206,7 +206,7 @@ dsh plugin --profile web add dsh-feishu-assistant
 npm test          # 等价于 node test/all.mjs
 ```
 
-九个用例、125 条断言，全部用**假飞书 SDK**（不打真接口、不需要凭据），涉及消息链路的都跑真实的 `apply()`：
+九个用例、128 条断言，全部用**假飞书 SDK**（不打真接口、不需要凭据），涉及消息链路的都跑真实的 `apply()`：
 
 | 用例 | 覆盖 |
 |---|---|
@@ -218,7 +218,7 @@ npm test          # 等价于 node test/all.mjs
 | `inbound-dedupe-check` | 重复投递只答一次 |
 | `forward-check` | 合并转发：翻页消息 ID、开卡失败走普通消息、转发被拒不影响收尾、企微提醒触发 |
 | `wecom-check` | 企微提醒：开关/配置不全/Secret 缺失不发、token 复用与 corpId 变更、2048 字节切分、接收人覆盖、errcode 非 0 |
-| `settings-check` | 设置页后端：AgentId 解析、快照不返回 Secret、只存企微 Secret 不重连、注册 feishuWecomSender |
+| `settings-check` | 设置页后端：AgentId 解析、快照不返回 Secret、只存企微 Secret 不重连、注册 feishuWecomSender、没有 webServer 时仍加载 |
 
 测试放在 `test/`，**不随 npm 包发布**（`package.json` 的 `files` 只有 `lib` 和 `cordis.patch.yml`）。
 
@@ -239,11 +239,34 @@ npm test          # 等价于 node test/all.mjs
 
 ## 依赖的 DSH 服务
 
-`agents`、`settings`、`credentials`、`webServer` 列在 `inject` 里，缺一个插件就不会加载。
+`inject` 里只有 `agents`、`settings`、`credentials` 三个**硬依赖**，缺一个插件就不会加载。三个都是官方包（`@deepseek-ai/dsh-agent` / `dsh-settings` / `dsh-credentials`），随 `dsh-base` 走，任何 profile 都有。
 
-四个都是官方包（`@deepseek-ai/dsh-agent` / `dsh-settings` / `dsh-credentials` / `dsh-host-webserver`）。前三个随 `dsh-base` 走，任何 profile 都有；**`webServer` 只有 `dsh-web-app` 提供**，所以：
+`webServer` 是**可选**的：
 
-> **这个插件只能在 web profile 里用。** 装进 `acp`、`headless`、`sdk` 之类的 profile 时，因为 `webServer` 不存在，插件会**静默不加载**——不报错，就是没反应。安装时 `--profile web` 不要省。
+- 有它（web profile）就注册设置页；
+- 没有它（acp、headless、sdk）插件照常加载，飞书长连接、请求队列、审批、合并转发、企微提醒都工作，只是没有设置页。
+
+### 没有设置页时怎么配
+
+配置手写在当前 profile 的 `cordis.patch.yml`：
+
+```yaml
+- id: feishu-assistant
+  config:
+    sessionId: '...'
+    managerId: 'ou_...'        # 管理员 open_id，没有配对码，直接填
+    persona: |
+      你是……
+    personaName: 'AGENTS.md'
+    wecomEnabled: true
+    wecomCorpId: 'ww...'
+    wecomAgentId: 1000008
+    wecomToUser: '...'
+```
+
+Secret 写在 `$DSH_HOME/.credentials.yaml` 的 `refs` 下：`FEISHU_ASSISTANT_APP_ID`、`FEISHU_ASSISTANT_APP_SECRET`、`FEISHU_ASSISTANT_WECOM_SECRET`。
+
+配对码依赖设置页；没有设置页时把管理员 open_id 直接填进 `managerId`。
 
 ## 更新日志
 

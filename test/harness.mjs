@@ -114,9 +114,9 @@ export async function startPlugin({ agent = createAgent(), hasAgent = () => true
       // 插件靠 config 重读，用例靠派发 loader/volatile-update 走那条热更新路径。
       update: async (namespace, patch) => Object.assign(entryConfig, patch),
     },
-    webServer: webServer ?? {
-      register: ({ path, handler }) => { routes.set(path, handler); },
-    },
+    webServer: webServer === undefined
+      ? { register: ({ path, handler }) => { routes.set(path, handler); } }
+      : webServer,
   };
   const ctx = {
     logger: () => log.logger,

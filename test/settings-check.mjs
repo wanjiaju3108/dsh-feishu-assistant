@@ -9,7 +9,7 @@
 
 import { Readable } from 'node:stream';
 
-import { createAgent, createCheck, registry, startPlugin } from './harness.mjs';
+import { createAgent, createCheck, registry, startPlugin, tick } from './harness.mjs';
 
 const { eq, ok, finish } = createCheck();
 
@@ -76,6 +76,24 @@ ok('① 设置页路由注册完成', routes.size >= 4);
 {
   ok('⑪ 注册了 feishuWecomSender', provided.has('feishuWecomSender'));
   ok('⑫ 发送器带 sendText', typeof provided.get('feishuWecomSender')?.sendText === 'function');
+}
+
+// 5) 没有 webServer：插件照常加载，只是没有设置页
+{
+  const {
+    routes: noWebRoutes,
+    provided: noWebProvided,
+    agent: noWebAgent,
+    incoming,
+  } = await startPlugin({
+    agent: createAgent({ id: 'sess-noweb' }),
+    webServer: null,
+  });
+  eq('⑬ 没有 webServer 时设置页路由不注册', noWebRoutes.size, 0);
+  ok('⑭ 没有 webServer 时插件仍然加载', noWebProvided.has('feishuWecomSender'));
+  await incoming('om_noweb', '没有设置页也要能用');
+  await tick();
+  ok('⑮ 没有 webServer 时消息仍然注入会话', noWebAgent.followups.length > 0);
 }
 
 finish();
